@@ -45,8 +45,10 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../RRT_pend_C/main.c 
-OBJECTS       = main.o
+SOURCES       = ../RRT_pend_C/main.c \
+		../RRT_pend_C/RRT.c 
+OBJECTS       = main.o \
+		RRT.o
 DIST          = ../../../../Qt/5.3/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/common/shell-unix.conf \
 		../../../../Qt/5.3/gcc_64/mkspecs/common/unix.conf \
@@ -148,7 +150,8 @@ DIST          = ../../../../Qt/5.3/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/features/exceptions.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/features/yacc.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/features/lex.prf \
-		../RRT_pend_C/RRT_pend_C.pro ../RRT_pend_C/main.c
+		../RRT_pend_C/RRT_pend_C.pro ../RRT_pend_C/main.c \
+		../RRT_pend_C/RRT.c
 QMAKE_TARGET  = RRT_pend_C
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = RRT_pend_C
@@ -422,6 +425,9 @@ compiler_clean:
 
 main.o: ../RRT_pend_C/main.c 
 	$(CC) -c $(CFLAGS) $(INCPATH) -o main.o ../RRT_pend_C/main.c
+
+RRT.o: ../RRT_pend_C/RRT.c 
+	$(CC) -c $(CFLAGS) $(INCPATH) -o RRT.o ../RRT_pend_C/RRT.c
 
 ####### Install
 
