@@ -30,7 +30,7 @@
 #define ANG_VEL_MAX 8.0         // maximum angular velocity
 
 // RRT algorithm macros
-#define NUM_OF_ITERATIONS 300
+#define NUM_OF_ITERATIONS 172800
 #define LENGTH_OF_SOLN_PATH 30
 #define NUM_OF_GOAL_STATES 8
 
@@ -41,91 +41,94 @@
 double generateRandomDouble(double min, double max);
 void euclidianDistSquare(double * A, double B[][2], int lengthOfB, double* listOfDistSq);
 int findMin(double array[], int lengthOfArray);
-void pendulumDynamics(double* x, double u, double* xd);
+void pendulumDynamics(double* x, double u, double* next_state);
+
+
+/////////////////////////////////////////////////////////////////
+// MAIN
+/////////////////////////////////////////////////////////////////
 
 int main(void)
 {
-    double x0[] = {-M_PI/2,0};   // initial state; angle position measured from x-axis
-    double xG[] = {M_PI/2,0};    // goal state
+//    double start_state[] = {-M_PI/2,0};   // initial state; angle position measured from x-axis
+    double end_state[] = {M_PI/2,0};    // goal state
 
-    double xlimits[2][2] = {{-M_PI,M_PI},{-8,8}};  // state limits; angular position between -pi & pi rad; angular velocity between -10 & 10 rad/s
+    double state_limits[2][2] = {{-M_PI,M_PI},{-8,8}};  // state limits; angular position between -pi & pi rad; angular velocity between -10 & 10 rad/s
 
     // control torques to be used: linspace(-5,5,20)
-    double U[] = {-5.0000,-4.4737,-3.9474,-3.4211,-2.8947,-2.3684,-1.8421,-1.3158,-0.7895,-0.2632,
+    double discrete_control_torques[] = {-5.0000,-4.4737,-3.9474,-3.4211,-2.8947,-2.3684,-1.8421,-1.3158,-0.7895,-0.2632,
                 5.0000, 4.4737, 3.9474, 3.4211, 2.8947, 2.3684, 1.8421, 1.3158, 0.7895, 0.2632};
-    int lengthOfU = (int)( sizeof(U)/sizeof(U[0]) );
+    int number_of_discrete_torques = (int)( sizeof(discrete_control_torques)/sizeof(discrete_control_torques[0]) );
 
-    double dt = 0.02;            // time interval between application of subsequent control torques
-
-    int N = 172800;      // max number of iterations (if this value is edited, modify initialization of G as well)
+    double time_step = 0.02;            // time interval between application of subsequent control torques
 
     // static memory allocation
-    double xn[2];        // stores a state
-    double xd[2];
-    //double G[50000][2] = { [0 ... 50000-1] = {-M_PI/2,0} }; // graph of states in RRT; each index corresponds to a vertex (using designated initializer)
-    double G[172800][2];
+    double random_state[2];        // stores a state
+    double next_state[2];
+    //double RRT_tree[50000][2] = { [0 ... 50000-1] = {-M_PI/2,0} }; // graph of states in RRT; each index corresponds to a vertex (using designated initializer)
+    double RRT_tree[NUM_OF_ITERATIONS][2];
 
     int x;
-    for(x = 0; x < 172800; x++)
+    for(x = 0; x < NUM_OF_ITERATIONS; x++)
     {
-        G[x][0] = -M_PI/2;
-        G[x][1] = 0;
+        RRT_tree[x][0] = -M_PI/2;
+        RRT_tree[x][1] = 0;
     }
 
-    int P[N];         // stores index of parent state for each state in graph G
-    int Ui[N];        // stores index of control actions in U (each state will use a control action value in U)
-    double u_path[1000]; // stores sequence of control actions (solution to problem)
-    int xbi = 0;    // stores sequence of states joining initial to goal state
-    double xn_c[lengthOfU][2]; // stores temporary achievable states from a particular vertex
+    int parent_state_index[NUM_OF_ITERATIONS];         // stores index of parent state for each state in graph RRT_tree
+    int control_action_index[NUM_OF_ITERATIONS];        // stores index of control actions in discrete_control_torques (each state will use a control action value in discrete_control_torques)
+    double control_solution[1000]; // stores sequence of control actions (solution to problem)
+    int state_index = 0;    // stores sequence of states joining initial to goal state
+    double temp_achievable_states[number_of_discrete_torques][2]; // stores temporary achievable states from a particular vertex
 
-    double dsq[N];  // stores distance square values
+    double distance_square_values[NUM_OF_ITERATIONS];  // stores distance square values
 
     srand(time(NULL));  // initialize random number generator
 
 
     // keep growing RRT until goal found or run out of iterations
-    int n;
-    for(n = 1; n < N; n++)
+    int iteration;
+    for(iteration = 1; iteration < NUM_OF_ITERATIONS; iteration++)
     {
         // get random state
-        xn[0] = generateRandomDouble(xlimits[0][0],xlimits[0][1]);
-        xn[1] = generateRandomDouble(xlimits[1][0],xlimits[1][1]);
+        random_state[0] = generateRandomDouble(state_limits[0][0],state_limits[0][1]);
+        random_state[1] = generateRandomDouble(state_limits[1][0],state_limits[1][1]);
 
         // find distances between that state point and every vertex in RRT
-        euclidianDistSquare(xn,G,n,dsq);
+        euclidianDistSquare(random_state,RRT_tree,iteration,distance_square_values);
 
         // select RRT vertex closest to the state point
-        int minIndex = findMin(dsq,n);
+        int minIndex = findMin(distance_square_values,iteration);
 
         // from the closest RRT vertex, compute all the states that can be reached,
         // given the pendulum dynamics and available torques
         int ui;
-        for(ui = 0; ui < lengthOfU; ui++)
+        for(ui = 0; ui < number_of_discrete_torques; ui++)
         {
-            pendulumDynamics(G[minIndex],U[ui],xd);
-            xn_c[ui][0] = G[minIndex][0] + dt*xd[0];
-            xn_c[ui][1] = G[minIndex][1] + dt*xd[1];
+            pendulumDynamics(RRT_tree[minIndex],discrete_control_torques[ui],next_state);
+            temp_achievable_states[ui][0] = RRT_tree[minIndex][0] + time_step*next_state[0];
+            temp_achievable_states[ui][1] = RRT_tree[minIndex][1] + time_step*next_state[1];
         }
 
         // select the closest reachable state point
-        euclidianDistSquare(xn,xn_c,lengthOfU,dsq);
-        ui = findMin(dsq,lengthOfU);
-        xn[0] = xn_c[ui][0];
-        xn[1] = xn_c[ui][1];
+        euclidianDistSquare(random_state,temp_achievable_states,number_of_discrete_torques,distance_square_values);
+        ui = findMin(distance_square_values,number_of_discrete_torques);
+        random_state[0] = temp_achievable_states[ui][0];
+        random_state[1] = temp_achievable_states[ui][1];
 
         // if angular position is greater than pi rads, wrap around
-        if(xn[0] > M_PI || xn[0] < -M_PI)
-            xn[0] = fmod((xn[0]+M_PI), (2*M_PI)) - M_PI;
+        if(random_state[0] > M_PI || random_state[0] < -M_PI)
+            random_state[0] = fmod((random_state[0]+M_PI), (2*M_PI)) - M_PI;
 
         // link reachable state point to the nearest vertex in the tree
-        G[n][0] = xn[0];
-        G[n][1] = xn[1];
-        P[n] = minIndex;
-        Ui[n] = ui;
+        RRT_tree[iteration][0] = random_state[0];
+        RRT_tree[iteration][1] = random_state[1];
+        parent_state_index[iteration] = minIndex;
+        control_action_index[iteration] = ui;
 
-        if( (xn[0] <= xG[0]+0.05) && (xn[0] >= xG[0]-0.05) )
+        if( (random_state[0] <= end_state[0]+0.05) && (random_state[0] >= end_state[0]-0.05) )
         {
-            if( (xn[1] <= xG[1]+0.25) && (xn[1] >= xG[1]-0.25) )
+            if( (random_state[1] <= end_state[1]+0.25) && (random_state[1] >= end_state[1]-0.25) )
             {
                 break;
             }
@@ -133,30 +136,30 @@ int main(void)
 
     }
 
-    if(n == N)
+    if(iteration == NUM_OF_ITERATIONS)
     {
         printf("Simulation complete (goal not found; ran out of iterations)\n");
-        printf("Number of iterations: %d\n",n);
+        printf("Number of iterations: %d\n",iteration);
     } else
     {
         printf("Simulation complete (goal found)\n");
-        printf("Number of iterations: %d\n",n);
+        printf("Number of iterations: %d\n",iteration);
 
-        xbi = n;
+        state_index = iteration;
         int index = 0;
-        while(xbi != 0)
+        while(state_index != 0)
         {
-            u_path[index] = U[ Ui[xbi] ];
+            control_solution[index] = discrete_control_torques[ control_action_index[state_index] ];
             index++;
 
-            xbi = P[xbi];
+            state_index = parent_state_index[state_index];
         }
 
         FILE *dataFile = fopen("data.txt", "w");
 
         while(index > 0)
         {
-            fprintf(dataFile, "%f\n",u_path[index-1]);
+            fprintf(dataFile, "%f\n",control_solution[index-1]);
             index--;
         }
 
@@ -206,7 +209,7 @@ int findMin(double array[], int lengthOfArray)
 /*
  * Computes x_dot of the pendulum, given x and a control input u
  */
-void pendulumDynamics(double* x, double u, double* xd)
+void pendulumDynamics(double* x, double u, double* next_state)
 {
     // pendulum parameters
     int m = 1;                  // mass
@@ -215,6 +218,6 @@ void pendulumDynamics(double* x, double u, double* xd)
     double g = 9.8;              // acceleration due to gravity
     double b = 0.1;              // damping factor
 
-    xd[0] = x[1];
-    xd[1] = (u - m*g*l*sin((M_PI/2)-x[0]) - b*x[1]) / I;
+    next_state[0] = x[1];
+    next_state[1] = (u - m*g*l*sin((M_PI/2)-x[0]) - b*x[1]) / I;
 }
