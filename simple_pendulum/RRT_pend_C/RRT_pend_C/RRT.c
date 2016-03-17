@@ -4,10 +4,11 @@
 #include <math.h>
 #include <time.h>
 #include "RRT.h"
+#include "kdtree.h"
 
 int RRT_kernel(double control_solution[])
 {
-    //    double start_state[] = {-M_PI/2,0};   // initial state; angle position measured from x-axis
+    double start_state[] = {-M_PI/2,0};   // initial state; angle position measured from x-axis
     double end_state[] = {M_PI/2,0};    // goal state
 
     double state_limits[2][2] = {{-M_PI,M_PI},{-8,8}};  // state limits; angular position between -pi & pi rad; angular velocity between -10 & 10 rad/s
@@ -22,7 +23,7 @@ int RRT_kernel(double control_solution[])
     // static memory allocation
     double random_state[2];        // stores a state
     double next_state[2];
-    //double RRT_tree[50000][2] = { [0 ... 50000-1] = {-M_PI/2,0} }; // graph of states in RRT; each index corresponds to a vertex (using designated initializer)
+    //double RRT_tree[NUM_OF_ITERATIONS][2] = { [0 ... NUM_OF_ITERATIONS-1] = {-M_PI/2,0} }; // graph of states in RRT; each index corresponds to a vertex (using designated initializer)
     double RRT_tree[NUM_OF_ITERATIONS][2];
 
     int x;
@@ -40,8 +41,16 @@ int RRT_kernel(double control_solution[])
 
     double distance_square_values[NUM_OF_ITERATIONS];  // stores distance square values
 
-    srand(time(NULL));  // initialize random number generator
+    void * kd_tree;
+    struct kdres * kd_results;
+    int tree_node_index[NUM_OF_ITERATIONS];
 
+    kd_tree = kd_create(2);
+    tree_node_index[0] = 0;
+    kd_insert(kd_tree, start_state, &tree_node_index[0]);
+
+    srand(time(NULL));  // initialize random number generator
+    double temp[2];
 
     // keep growing RRT until goal found or run out of iterations
     int iteration;
@@ -51,20 +60,19 @@ int RRT_kernel(double control_solution[])
         random_state[0] = generateRandomDouble(state_limits[0][0],state_limits[0][1]);
         random_state[1] = generateRandomDouble(state_limits[1][0],state_limits[1][1]);
 
-        // find distances between that state point and every vertex in RRT
-        euclidianDistSquare(random_state,RRT_tree,iteration,distance_square_values);
-
-        // select RRT vertex closest to the state point
-        int minIndex = findMin(distance_square_values,iteration);
+        // find vertex in RRT closest to random state
+        kd_results = kd_nearest(kd_tree, random_state);
+        int * nearest_state_ptr = (int*) kd_res_item(kd_results, temp);
+        int nearest_state_index = *nearest_state_ptr;
 
         // from the closest RRT vertex, compute all the states that can be reached,
         // given the pendulum dynamics and available torques
         int ui;
         for(ui = 0; ui < number_of_discrete_torques; ui++)
         {
-            pendulumDynamics(RRT_tree[minIndex],discrete_control_torques[ui],next_state);
-            temp_achievable_states[ui][0] = RRT_tree[minIndex][0] + time_step*next_state[0];
-            temp_achievable_states[ui][1] = RRT_tree[minIndex][1] + time_step*next_state[1];
+            pendulumDynamics(RRT_tree[nearest_state_index],discrete_control_torques[ui],next_state);
+            temp_achievable_states[ui][0] = RRT_tree[nearest_state_index][0] + time_step*next_state[0];
+            temp_achievable_states[ui][1] = RRT_tree[nearest_state_index][1] + time_step*next_state[1];
         }
 
         // select the closest reachable state point
@@ -80,8 +88,10 @@ int RRT_kernel(double control_solution[])
         // link reachable state point to the nearest vertex in the tree
         RRT_tree[iteration][0] = random_state[0];
         RRT_tree[iteration][1] = random_state[1];
-        parent_state_index[iteration] = minIndex;
+        parent_state_index[iteration] = nearest_state_index;
         control_action_index[iteration] = ui;
+        tree_node_index[iteration] = iteration;
+        kd_insert(kd_tree, random_state, &tree_node_index[iteration]);
 
         if( (random_state[0] <= end_state[0]+0.05) && (random_state[0] >= end_state[0]-0.05) )
         {
@@ -140,16 +150,16 @@ void euclidianDistSquare(double* A, double B[][2], int lengthOfB, double* listOf
  */
 int findMin(double array[], int lengthOfArray)
 {
-    int minIndex = 0;
+    int nearest_state_index = 0;
 
     int i;
     for(i = 0; i < lengthOfArray; i++)
     {
-        if(array[i] < array[minIndex])
-            minIndex = i;
+        if(array[i] < array[nearest_state_index])
+            nearest_state_index = i;
     }
 
-    return minIndex;
+    return nearest_state_index;
 }
 
 /*

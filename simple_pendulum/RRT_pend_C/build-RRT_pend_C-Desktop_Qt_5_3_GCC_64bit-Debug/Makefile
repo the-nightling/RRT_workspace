@@ -46,9 +46,11 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../RRT_pend_C/main.c \
-		../RRT_pend_C/RRT.c 
+		../RRT_pend_C/RRT.c \
+		../RRT_pend_C/kdtree.c 
 OBJECTS       = main.o \
-		RRT.o
+		RRT.o \
+		kdtree.o
 DIST          = ../../../../Qt/5.3/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/common/shell-unix.conf \
 		../../../../Qt/5.3/gcc_64/mkspecs/common/unix.conf \
@@ -151,7 +153,8 @@ DIST          = ../../../../Qt/5.3/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/features/yacc.prf \
 		../../../../Qt/5.3/gcc_64/mkspecs/features/lex.prf \
 		../RRT_pend_C/RRT_pend_C.pro ../RRT_pend_C/main.c \
-		../RRT_pend_C/RRT.c
+		../RRT_pend_C/RRT.c \
+		../RRT_pend_C/kdtree.c
 QMAKE_TARGET  = RRT_pend_C
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = RRT_pend_C
@@ -423,11 +426,15 @@ compiler_clean:
 
 ####### Compile
 
-main.o: ../RRT_pend_C/main.c 
+main.o: ../RRT_pend_C/main.c ../RRT_pend_C/RRT.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o main.o ../RRT_pend_C/main.c
 
-RRT.o: ../RRT_pend_C/RRT.c 
+RRT.o: ../RRT_pend_C/RRT.c ../RRT_pend_C/RRT.h \
+		../RRT_pend_C/kdtree.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o RRT.o ../RRT_pend_C/RRT.c
+
+kdtree.o: ../RRT_pend_C/kdtree.c ../RRT_pend_C/kdtree.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o kdtree.o ../RRT_pend_C/kdtree.c
 
 ####### Install
 

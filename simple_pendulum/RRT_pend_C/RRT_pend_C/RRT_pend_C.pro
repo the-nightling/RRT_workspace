@@ -4,8 +4,10 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.c \
-    RRT.c
+    RRT.c \
+    kdtree.c
 
 HEADERS += \
-    RRT.h
+    RRT.h \
+    kdtree.h
 
