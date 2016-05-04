@@ -27,26 +27,23 @@
 #define ANG_VEL_MAX 8.0		// maximum angular velocity
 #define GRID_X 42
 #define GRID_Y 6
-//#define DELTA_X (ANG_POS_MAX-ANG_POS_MIN)/(2*GRID_X + 4)
-//#define DELTA_Y (ANG_VEL_MAX-ANG_VEL_MIN)/(2*GRID_Y*NUM_BLOCKS + 4)
 #define DELTA_X (ANG_POS_MAX-ANG_POS_MIN)/(2*GRID_X + 2)
 #define DELTA_Y (ANG_VEL_MAX-ANG_VEL_MIN)/(2*GRID_Y*NUM_BLOCKS + 2)
-#define FIRST_X0_X 4*DELTA_X + ANG_POS_MIN
-#define FIRST_X0_Y 4*DELTA_Y + ANG_VEL_MIN
 
 // RRT algorithm macros
 #define NUM_OF_ITERATIONS 300
 #define LENGTH_OF_SOLN_PATH 20
+#define DIMENSIONS 2
 #define NUM_OF_GOAL_STATES 8
 
 // thread macros
 #define NUM_BLOCKS 8
 #define NUM_THREADS GRID_X * GRID_Y
 #define NUM_RESULTS_PER_THREAD GRID_X * GRID_Y * NUM_BLOCKS
-#define NUM_RESULTS_PER_THREAD_2 2 * LENGTH_OF_SOLN_PATH * NUM_OF_GOAL_STATES
+#define NUM_RESULTS_PER_THREAD_2 DIMENSIONS * LENGTH_OF_SOLN_PATH * NUM_OF_GOAL_STATES
 
 // for graph shortest path finding algorithm
-#define NUM_NODES 2016
+#define NUM_NODES GRID_X * GRID_Y * NUM_BLOCKS
 #define MAX_COST 9999
 
 ////////////////////////////////////////////

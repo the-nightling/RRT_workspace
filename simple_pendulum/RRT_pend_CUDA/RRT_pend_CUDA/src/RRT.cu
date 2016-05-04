@@ -47,9 +47,6 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;		// thread id
 
 	// computing initial state
-	//double start_state[] = { FIRST_X0_X, FIRST_X0_Y }; // initial state; angle position measured from x-axis
-	//start_state[0] += (idx % GRID_X) * 2 * DELTA_X;
-	//start_state[1] += (idx / GRID_X) * 2 * DELTA_Y;
 	double start_state[] = { ANG_POS_MIN, ANG_VEL_MIN}; // initial state; angle position measured from x-axis
 	start_state[0] += ((idx % GRID_X) * 2 * DELTA_X) + (2 * DELTA_X);
 	start_state[1] += (((idx / GRID_X) % (GRID_Y*NUM_BLOCKS)) * 2 * DELTA_Y) + (2 * DELTA_Y);
@@ -57,21 +54,10 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 	tmp[2*idx] = start_state[0];
 	tmp[2*idx+1] = start_state[1];
 
-	/* TODO: automate goal placement around initial state
-	double end_state[8][2] =
-	{ { start_state[0] - 2 * DELTA_X, start_state[1] + 2 * DELTA_Y },
-			{ start_state[0], start_state[1] + 2 * DELTA_Y },
-			{ start_state[0] + 2 * DELTA_X, start_state[1] + 2 * DELTA_Y },
-			{ start_state[0] - 2 * DELTA_X, start_state[1] },
-			{ start_state[0] + 2 * DELTA_X, start_state[1] },
-			{ start_state[0] - 2 * DELTA_X, start_state[1] - 2 * DELTA_Y },
-			{ start_state[0], start_state[1] - 2 * DELTA_Y },
-			{ start_state[0] + 2 * DELTA_X, start_state[1] - 2 * DELTA_Y }
-	};
-	//*/
-	double end_state[NUM_OF_GOAL_STATES][2] = {{0}};
+	// automate goal placement around initial state
+	double end_state[NUM_OF_GOAL_STATES][DIMENSIONS] = {{0}};
 	int goal_idx;
-	for(goal_idx = 0; goal_idx < pow((float)3,(float)2); goal_idx++)
+	for(goal_idx = 0; goal_idx < pow((float)3,(float)DIMENSIONS); goal_idx++)
 	{
 		if(goal_idx < NUM_OF_GOAL_STATES/2){
 			end_state[goal_idx][0] = start_state[0] + ((goal_idx%3) - 1)*2*DELTA_X;
@@ -83,9 +69,10 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 
 	}
 
-	double state_limits[2][2] = { { start_state[0] - 3 * DELTA_X, start_state[0] + 3 * DELTA_X }, {
-			start_state[1] - 3 * DELTA_Y, start_state[1] + 3 * DELTA_Y } }; // state limits; angular position between -pi & pi rad; angular velocity between -10 & 10 rad/s
-	//double state_limits[2][2] = { { start_state[0] - DELTA_X, start_state[0] + DELTA_X }, { start_state[1] - DELTA_Y, start_state[1] + DELTA_Y } }; // state limits; angular position between -pi & pi rad; angular velocity between -10 & 10 rad/s
+	double state_limits[2][2] = {
+			{ start_state[0] - 3 * DELTA_X, start_state[0] + 3 * DELTA_X },
+			{ start_state[1] - 3 * DELTA_Y, start_state[1] + 3 * DELTA_Y }
+	}; // state limits; angular position between -pi & pi rad; angular velocity between -10 & 10 rad/s
 
 	// control torques to be used: linspace(-5,5,20)
 	//*
@@ -102,10 +89,10 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 	double time_step = 0.02; // time interval between application of subsequent control torques
 
 	// static memory allocation
-	double random_state[2];        // stores a state
-	double next_state[2];
+	double random_state[DIMENSIONS];        // stores a state
+	double next_state[DIMENSIONS];
 
-	double RRT_tree[NUM_OF_ITERATIONS][2];	// stores tree
+	double RRT_tree[NUM_OF_ITERATIONS][DIMENSIONS];	// stores tree
 	int x, y;
 	for (x = 0; x < NUM_OF_ITERATIONS; x++) {	// initialize tree to initial state
 		RRT_tree[x][0] = start_state[0];
@@ -117,9 +104,9 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 
 	int parent_state_index[NUM_OF_ITERATIONS]; // stores index of parent state for each state in graph RRT_tree
 	int control_action_index[NUM_OF_ITERATIONS]; // stores index of control actions in discrete_control_torques (each state will use a control action value in discrete_control_torques)
-	double u_path[8][LENGTH_OF_SOLN_PATH]; // stores sequence of control actions (solution to problem)
-	double x_path[8][LENGTH_OF_SOLN_PATH][2];
-	for (y = 0; y < 8; y++) {
+	double u_path[NUM_OF_GOAL_STATES][LENGTH_OF_SOLN_PATH]; // stores sequence of control actions (solution to problem)
+	double x_path[NUM_OF_GOAL_STATES][LENGTH_OF_SOLN_PATH][DIMENSIONS];
+	for (y = 0; y < NUM_OF_GOAL_STATES; y++) {
 		for (x = 0; x < LENGTH_OF_SOLN_PATH; x++) {	// initialize tree to initial state
 			x_path[y][x][0] = 0;
 			x_path[y][x][1] = 0;
@@ -127,21 +114,22 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 		}
 	}
 	int state_index = 0;    // stores sequence of states joining initial to goal state
-	double temp_achievable_states[20][2]; // stores temporary achievable states from a particular vertex; 20 is length of discrete_control_torques
+	double temp_achievable_states[20][DIMENSIONS]; // stores temporary achievable states from a particular vertex; 20 is length of discrete_control_torques
 
 	double distance_square_values[NUM_OF_ITERATIONS];  // stores distance square values
 
 	int goal_index;
-	int not_found[8] = { 1, 1, 1, 1, 1, 1, 1, 1 };
+	int not_found[NUM_OF_GOAL_STATES] = {0};
+	for(int i=0; i < NUM_OF_GOAL_STATES;i++)
+		not_found[i] = 1;
 	int weight = 0;
+
 	// keep growing RRT until goal found or run out of iterations
 	int iteration;
 	for (iteration = 1; iteration < NUM_OF_ITERATIONS; iteration++) {
 		// get random state
-		random_state[0] = curand_uniform(my_curandstate + idx)
-																												* (state_limits[0][1] - state_limits[0][0]) + state_limits[0][0];
-		random_state[1] = curand_uniform(my_curandstate + idx)
-																												* (state_limits[1][1] - state_limits[1][0]) + state_limits[1][0];
+		random_state[0] = curand_uniform(my_curandstate + idx) * (state_limits[0][1] - state_limits[0][0]) + state_limits[0][0];
+		random_state[1] = curand_uniform(my_curandstate + idx) * (state_limits[1][1] - state_limits[1][0]) + state_limits[1][0];
 
 		// find distances between that state point and every vertex in RRT
 		euclidianDistSquare(random_state, RRT_tree, iteration, distance_square_values);
@@ -177,7 +165,7 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 		// if tree has grown near enough to one of the surrounding goal states
 		// set that particular goal state to 'found'
 		// save path from initial state to that goal state
-		for (goal_index = 0; goal_index < 8; goal_index++) {
+		for (goal_index = 0; goal_index < NUM_OF_GOAL_STATES; goal_index++) {
 			if (not_found[goal_index] == 1
 					&& (random_state[0] <= end_state[goal_index][0] + 0.05)
 					&& (random_state[0] >= end_state[goal_index][0] - 0.05)) {
@@ -200,53 +188,12 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 		}
 	}
 
-	weight = 1;
 
 	// Update adjacency matrix:
 	// for each goal state surrounding an initial state,
 	// if the goal state has been reached,
 	// if tree is growing near border of phase space, check if tree is growing within state space limits
 	// set respective flag in adjacency matrix to 1 (or to a weight)
-	/*
-	int k;
-	for (k = 0; k < 8; k++) {
-		if (not_found[k] == 0) {
-			if (k == 0 && idx % GRID_X != 0) {
-				if (idx + GRID_X - 1 <= NUM_THREADS * NUM_BLOCKS - 1) {
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx + GRID_X - 1] = weight;
-				}
-			} else if (k == 1) {
-				if (idx + GRID_X <= NUM_THREADS * NUM_BLOCKS - 1) {
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx + GRID_X] = weight;
-				}
-			} else if (k == 2 && (idx + 1) % GRID_X != 0) {
-				if (idx + GRID_X + 1 <= NUM_THREADS * NUM_BLOCKS - 1) {
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx + GRID_X + 1] = weight;
-				}
-			} else if (k == 3 && idx % GRID_X != 0) {
-				if (idx - 1 >= 0) { // don't need that line
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx - 1] = weight;
-				}
-			} else if (k == 4 && (idx + 1) % GRID_X != 0) {
-				if (idx + 1 <= NUM_THREADS * NUM_BLOCKS - 1) { // don't need that line
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx + 1] = weight;
-				}
-			} else if (k == 5 && idx % GRID_X != 0) {
-				if (idx - GRID_X - 1 >= 0) {
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx - GRID_X - 1] = weight;
-				}
-			} else if (k == 6) {
-				if (idx - GRID_X >= 0) {
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx - GRID_X] = weight;
-				}
-			} else if (k == 7 && (idx + 1) % GRID_X != 0) {
-				if (idx - GRID_X + 1 >= 0) {
-					adjacency_matrix[idx * NUM_THREADS * 8 + idx - GRID_X + 1] = weight;
-				}
-			}
-		}
-	}
-	//*/
 	//*
 	int offset[8] = {-43,-42,-41,-1,1,41,42,43};
 	int offset_idx = 0;
@@ -256,8 +203,8 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 		if (not_found[k] == 0) {
 			offset_idx = offset[k];
 			if((idx * NUM_THREADS * NUM_BLOCKS + idx + offset_idx >= 0) && (idx * NUM_THREADS * NUM_BLOCKS + idx + offset_idx < NUM_RESULTS_PER_THREAD * NUM_THREADS * NUM_BLOCKS)){
-				if((end_state[k][0] > ANG_POS_MIN+1*DELTA_X) && (end_state[k][0] < ANG_POS_MAX-1*DELTA_X) &&
-						(end_state[k][1] > ANG_VEL_MIN+1*DELTA_Y) && (end_state[k][1] < ANG_VEL_MAX-1*DELTA_Y) ){
+				if((end_state[k][0] > ANG_POS_MIN+DELTA_X) && (end_state[k][0] < ANG_POS_MAX-DELTA_X) &&
+						(end_state[k][1] > ANG_VEL_MIN+DELTA_Y) && (end_state[k][1] < ANG_VEL_MAX-DELTA_Y) ){
 					adjacency_matrix[idx * NUM_THREADS * NUM_BLOCKS + idx + offset_idx] = weight;
 				}
 			}
@@ -267,27 +214,24 @@ __global__ void RRT_kernel(curandState *my_curandstate, int *adjacency_matrix,
 
 	//* copy path results of algorithm to device results array
 	int i, j;
-	int num_of_goals = 8;
+	int num_of_goals = NUM_OF_GOAL_STATES;
 	for (j = 0; j < num_of_goals; j++) {
 		for (i = 0; i < LENGTH_OF_SOLN_PATH; i++) {
-			path_solutions[idx * 2 * num_of_goals * LENGTH_OF_SOLN_PATH + j * 2 * LENGTH_OF_SOLN_PATH + 2 * i] = x_path[j][i][0];
-			path_solutions[idx * 2 * num_of_goals * LENGTH_OF_SOLN_PATH + j * 2 * LENGTH_OF_SOLN_PATH + 2 * i + 1] = x_path[j][i][1];
+			path_solutions[idx * DIMENSIONS * num_of_goals * LENGTH_OF_SOLN_PATH + j * DIMENSIONS * LENGTH_OF_SOLN_PATH + DIMENSIONS * i] = x_path[j][i][0];
+			path_solutions[idx * DIMENSIONS * num_of_goals * LENGTH_OF_SOLN_PATH + j * DIMENSIONS * LENGTH_OF_SOLN_PATH + DIMENSIONS * i + 1] = x_path[j][i][1];
 			control_solutions[idx * num_of_goals * LENGTH_OF_SOLN_PATH + j * LENGTH_OF_SOLN_PATH + i] = u_path[j][i];
 			if (not_found[j] == 0) {
 				if (i == LENGTH_OF_SOLN_PATH - 2) {
-					path_solutions[idx * 2 * num_of_goals * LENGTH_OF_SOLN_PATH + j * 2 * LENGTH_OF_SOLN_PATH + 2 * i] = start_state[0];
-					path_solutions[idx * 2 * num_of_goals * LENGTH_OF_SOLN_PATH + j * 2 * LENGTH_OF_SOLN_PATH + 2 * i + 1] = start_state[1];
+					path_solutions[idx * DIMENSIONS * num_of_goals * LENGTH_OF_SOLN_PATH + j * DIMENSIONS * LENGTH_OF_SOLN_PATH + DIMENSIONS * i] = start_state[0];
+					path_solutions[idx * DIMENSIONS * num_of_goals * LENGTH_OF_SOLN_PATH + j * DIMENSIONS * LENGTH_OF_SOLN_PATH + DIMENSIONS * i + 1] = start_state[1];
 				} else if (i == LENGTH_OF_SOLN_PATH - 1) {
-					path_solutions[idx * 2 * num_of_goals * LENGTH_OF_SOLN_PATH + j * 2 * LENGTH_OF_SOLN_PATH + 2 * i] = end_state[j][0];
-					path_solutions[idx * 2 * num_of_goals * LENGTH_OF_SOLN_PATH + j * 2 * LENGTH_OF_SOLN_PATH + 2 * i + 1] = end_state[j][1];
+					path_solutions[idx * DIMENSIONS * num_of_goals * LENGTH_OF_SOLN_PATH + j * DIMENSIONS * LENGTH_OF_SOLN_PATH + DIMENSIONS * i] = end_state[j][0];
+					path_solutions[idx * DIMENSIONS * num_of_goals * LENGTH_OF_SOLN_PATH + j * DIMENSIONS * LENGTH_OF_SOLN_PATH + DIMENSIONS * i + 1] = end_state[j][1];
 				}
 			}
 		}
 	}
 	//*/
-
-
-
 
 
 	/*

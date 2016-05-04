@@ -27,8 +27,8 @@ int main(void) {
 
 	// Used to get the start state for each thread
 	double *dev_start_state_0, *host_start_state_0;
-	host_start_state_0 = (double *) malloc(2 * 2016 * sizeof(double));
-	cudaMalloc(&dev_start_state_0, 2 * 2016 * sizeof(double));
+	host_start_state_0 = (double *) malloc(DIMENSIONS * NUM_RESULTS_PER_THREAD * sizeof(double));
+	cudaMalloc(&dev_start_state_0, DIMENSIONS * NUM_RESULTS_PER_THREAD * sizeof(double));
 
 	// Allocate host and device memory to store adjacency matrix
 	host_adjacency_matrix = (int *) malloc(
@@ -53,12 +53,14 @@ int main(void) {
 	cudaMemset(device_control_solns, 0,
 			NUM_OF_GOAL_STATES* LENGTH_OF_SOLN_PATH * NUM_THREADS * NUM_BLOCKS * sizeof(double));// initialize device results array to 0
 
+
 	// Initialize RNG in parallel
 	RNG_setup_kernel<<<NUM_BLOCKS, NUM_THREADS>>>(device_state);
 
 	// Run parallel RRT algorithm
 	RRT_kernel<<<NUM_BLOCKS, NUM_THREADS>>>(device_state, device_adjacency_matrix,
 			device_path_solns, device_control_solns, dev_start_state_0);
+
 
 	// Copy results from GPU (device) to PC (host)
 	cudaMemcpy(host_adjacency_matrix, device_adjacency_matrix,
@@ -73,9 +75,10 @@ int main(void) {
 			NUM_OF_GOAL_STATES* LENGTH_OF_SOLN_PATH * NUM_THREADS * NUM_BLOCKS * sizeof(double),// copy control solutions from device to host
 			cudaMemcpyDeviceToHost);
 
+
 	// copy start state of each thread and output to console
-	cudaMemcpy(host_start_state_0, dev_start_state_0, 2 * 2016 * sizeof(double), cudaMemcpyDeviceToHost);
-	for(int i=0; i < 2016; i++)
+	cudaMemcpy(host_start_state_0, dev_start_state_0, DIMENSIONS * NUM_RESULTS_PER_THREAD * sizeof(double), cudaMemcpyDeviceToHost);
+	for(int i=0; i < NUM_RESULTS_PER_THREAD; i++)
 			printf("idx: %d State:%f, %f\n",i,host_start_state_0[2*i],host_start_state_0[2*i+1]);
 
 
@@ -172,12 +175,12 @@ int main(void) {
 		root_index = root_indices[i];
 		next_root_index = root_indices[i+1];
 		for(int goal_index=0; goal_index < 7; goal_index++){
-			start_of_path = 2*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*root_index + goal_index*2*LENGTH_OF_SOLN_PATH;
-			start_of_next_path = 2*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*next_root_index + goal_index*2*LENGTH_OF_SOLN_PATH;
-			root_x = host_path_solns[start_of_next_path-4+(2*LENGTH_OF_SOLN_PATH)];
-			root_y = host_path_solns[start_of_next_path-3+(2*LENGTH_OF_SOLN_PATH)];
-			goal_x = host_path_solns[start_of_path-2+(2*LENGTH_OF_SOLN_PATH)];
-			goal_y = host_path_solns[start_of_path-1+(2*LENGTH_OF_SOLN_PATH)];
+			start_of_path = DIMENSIONS*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*root_index + goal_index*2*LENGTH_OF_SOLN_PATH;
+			start_of_next_path = DIMENSIONS*NUM_OF_GOAL_STATES*LENGTH_OF_SOLN_PATH*next_root_index + goal_index*2*LENGTH_OF_SOLN_PATH;
+			root_x = host_path_solns[start_of_next_path-4+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
+			root_y = host_path_solns[start_of_next_path-3+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
+			goal_x = host_path_solns[start_of_path-2+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
+			goal_y = host_path_solns[start_of_path-1+(DIMENSIONS*LENGTH_OF_SOLN_PATH)];
 
 			if((root_x+root_y != 0.000000) && (fabs(root_x-goal_x) < 0.000001) && (fabs(root_y-goal_y) < 0.000001)){
 
@@ -222,12 +225,10 @@ int main(void) {
 	for (int i = 0; i < NUM_OF_GOAL_STATES* LENGTH_OF_SOLN_PATH * NUM_THREADS * NUM_BLOCKS; i++)
 		fprintf(control_solutions_file, "%f,\n", host_control_solns[i]);
 
-	//*
 	for(int i=0; i < solution_path.size(); ++i){
 		if(solution_path[i].first.first + solution_path[i].first.second != 0)
 			fprintf(pendulum_estimates_file, "%f %f %f\n", solution_path[i].first.first, solution_path[i].first.second, solution_path[i].second);
 	}
-	//*/
 
 	for(int i=0; i < NUM_RESULTS_PER_THREAD; i++)
 			fprintf(state_index_file, "idx: %d State:%f, %f\n",i,host_start_state_0[2*i],host_start_state_0[2*i+1]);
