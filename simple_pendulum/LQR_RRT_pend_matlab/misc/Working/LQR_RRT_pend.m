@@ -5,19 +5,6 @@ function control = LQR_RRT_pend
 % looking for the goal point/state (indicated by the red marker).
 % If the goal state was located, a red line traces back the sequence of states used
 % to reach the goal state.
-
-	% pendulum parameters
-	m = 1;		% mass
-	g = 9.8;	% acceleration due to gravity
-	l = 1;	    % length of pendulum link
-	b = 0.1;	% damping factor
-	theta_0 = -pi/2;    % initial angular position
-	
-	assignin('base', 'm', m);	% save variables into workspace
-	assignin('base', 'g', g);
-	assignin('base', 'l', l);
-	assignin('base', 'b', b);
-	assignin('base', 'theta_0', theta_0);
 	
 	x0 = [-pi/2; 0];	% initial state; angle position measured from x-axis
 	xG = [pi/2; 0];		% goal state
@@ -25,11 +12,8 @@ function control = LQR_RRT_pend
 	xlimits = [-pi,pi; -10,10];	% state limits
 	
 	U = linspace(-5,5,20);		% range of control torques that can be used
-	
-	dt = 0.04;			% time interval between application of subsequent control torques
-	assignin('base', 'dt', dt);
-	
-	N = 10000;	% maximum number of iterations
+		
+	N = 1000;	% maximum number of iterations
 
 	% pre-allocating memory
 	V = repmat(x0,1,N);		% stores a graph of states in RRT
@@ -84,19 +68,30 @@ function control = LQR_RRT_pend
 		
 		% plot new RRT branch
 		if(abs(x_new(1)-temp) < pi)
+            plot(delta(1:end-1,1),delta(1:end-1,2));
+		%{
 			line([V(1,i),x_new(1)],[V(2,i),x_new(2)],'Color','b');
+		%}
 		end
+
 		
 		% link reachable state point to the nearest vertex in the tree
 		V(:,n) = x_new;
 		P(n) = x_min_index;
 		cost = [cost; cost(x_min_index)+new_cost];
 %		Ui(n) = ui;
-
+        
+       P = rewire(V, P, X_near_indices, x_new, cost, n);
+        
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
-		if(mod(n,100)==1)
+		%{
+		if(mod(n,1)==1)
 			drawnow;
 		end
+		%}
+		
+		drawnow;
+%		pause;
 
 		% if the goal was reached, stop growing tree
 		if((x_new(1) <= xG(1)+0.1) && (x_new(1) >= xG(1)-0.1))

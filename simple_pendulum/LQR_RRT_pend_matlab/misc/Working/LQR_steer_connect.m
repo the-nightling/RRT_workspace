@@ -1,6 +1,6 @@
-function [t,y] = LQR_steer(x_nearest,x_rand)
+function [t,y] = LQR_steer_connect(x_nearest,x_rand)
     time_step = 0.004;
-    time_span = [0:time_step:10*time_step];
+    time_span = [0:time_step:20];
 
     x_nearest_offsetted = x_nearest - x_rand;
     
