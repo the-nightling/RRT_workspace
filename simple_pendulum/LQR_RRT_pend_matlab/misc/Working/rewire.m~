@@ -11,7 +11,7 @@ function P = rewire(V, P, X_near_indices, x_new, cost, n, Q, R)
         new_cost = t(end-1);
         
         cost(n)+new_cost
-        cost(x_near_index)
+        cost(x_near_index
         
         if(cost(n)+new_cost < cost(x_near_index))
             P(x_near_index) = n;

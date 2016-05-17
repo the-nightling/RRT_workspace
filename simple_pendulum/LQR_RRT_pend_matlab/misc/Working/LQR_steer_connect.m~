@@ -1,4 +1,4 @@
-function [t,y] = LQR_steer_connect(x_nearest,x_rand, Q, R)
+function [t,y] = LQR_steer_connect(x_nearest,x_rand)
     time_step = 0.004;
     time_span = [0:time_step:20];
 

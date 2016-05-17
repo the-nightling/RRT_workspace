@@ -24,7 +24,7 @@ function control = LQR_RRT_pend
 	x_rand_c = repmat([1;1],1,length(U));   % stores temporary achievable states from a particular vertex
 	
 	cost = [0];
-    Q = diag([1 1]);
+    Q = diag([100 100]);
     R = 1;
 
 	% setup plot

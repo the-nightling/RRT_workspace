@@ -1,7 +1,8 @@
 function X_near_indices = LQR_near(V, x, n, Q, R)
 
     [A,B] = linearize_pendulum_about(x);
-
+    Q = diag([1 10]);
+    R = 1;
     [K,S] = lqr(A,B,Q,R);
     
     X_near_indices = [];
