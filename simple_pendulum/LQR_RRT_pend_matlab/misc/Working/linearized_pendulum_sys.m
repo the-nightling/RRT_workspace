@@ -1,4 +1,4 @@
-function dx = linearized_pendulum_sys(t,x,x0)
+function [dx,path_cost] = linearized_pendulum_sys(t,x,x0)
 
     % linearize non-linear pendulum about x0
     [A,B] = linearize_pendulum_about(x0);
@@ -9,6 +9,7 @@ function dx = linearized_pendulum_sys(t,x,x0)
     
     % apply LQR control
     [K,S] = lqr(A,B,Q,R);
+%    path_cost = path_cost+[x-x0]' * S * [x-x0];
 
 %    u = -K*x;
     Ac = [(A-B*K)];
