@@ -24,8 +24,6 @@ function control = LQR_RRT_pend
 	x_rand_c = repmat([1;1],1,length(U));   % stores temporary achievable states from a particular vertex
 	
 	cost = [0];
-    Q = diag([1 1]);
-    R = 1;
 
 	% setup plot
 	figure(1);
@@ -49,16 +47,16 @@ function control = LQR_RRT_pend
     	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
 		
 		%% select RRT vertex closest to the state point, based on LQR distance metric
-		i = LQR_nearest(V,x_rand,n,Q,R);
+		i = LQR_nearest(V,x_rand,n);
 		x_nearest = V(:,i);
 		
-		[t, delta] = LQR_steer(x_nearest, x_rand,Q,R);
+		[t, delta] = LQR_steer(x_nearest, x_rand);
         x_new = delta(end-1,:)';
         new_cost = t(end-1);
         
-        X_near_indices = LQR_near(V,x_new,n,Q,R);
+        X_near_indices = LQR_near(V,x_new,n);
         
-        [x_min_index, delta_min] = choose_parent(V,X_near_indices,x_new,cost,Q,R);
+        [x_min_index, delta_min] = choose_parent(V,X_near_indices,x_new,cost);
         x_new = delta(end-1,:)';
         
 		
@@ -83,7 +81,7 @@ function control = LQR_RRT_pend
 		cost = [cost; cost(x_min_index)+new_cost];
 %		Ui(n) = ui;
         
-       P = rewire(V, P, X_near_indices, x_new, cost, n,Q,R);
+       P = rewire(V, P, X_near_indices, x_new, cost, n);
         
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
 		%{

@@ -1,10 +1,10 @@
-function [t,y] = LQR_steer(x_nearest,x_rand, Q, R)
+function [t,y] = LQR_steer(x_nearest,x_rand)
     time_step = 0.001;
     time_span = [0:time_step:0.1];
 
     x_nearest_offsetted = x_nearest - x_rand;
     
-    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand, Q, R), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
+    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
 
     y = y_offsetted + repmat(x_rand',length(y_offsetted),1);
     
