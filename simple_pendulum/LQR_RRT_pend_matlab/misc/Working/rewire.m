@@ -2,13 +2,12 @@ function P = rewire(V, P, X_near_indices, x_new, cost, n)
     x_min_index = 1;
     delta_min = [];
     
-    [Q,R] = set_LQR_cost_function_parameters();
+    [Q,R] = get_LQR_cost_function_parameters();
 
     for x_near_index = X_near_indices'
 
         x_near = V(:,x_near_index);
-        [t,delta] = LQR_steer(x_new,x_near);
-        new_cost = t(end-1);
+        [t,delta,new_cost] = LQR_steer_connect(x_new,x_near);
         
         if(cost(n)+new_cost < cost(x_near_index))
             P(x_near_index) = n;

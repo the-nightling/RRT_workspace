@@ -3,13 +3,12 @@ function [x_min_index, delta_min] = choose_parent(V, X_near_indices, x_new, cost
     x_min_index = 1;
     delta_min = [];
     
-    [Q,R] = set_LQR_cost_function_parameters();
+    [Q,R] = get_LQR_cost_function_parameters();
     
     for x_near_index = X_near_indices'
 
         x_near = V(:,x_near_index);
-        [t,delta] = LQR_steer(x_near,x_new);
-        new_cost = t(end-1);
+        [t,delta,new_cost] = LQR_steer_connect(x_near,x_new);
         
         if(cost(x_near_index)+new_cost < minCost)
             minCost = cost(x_near_index)+new_cost;

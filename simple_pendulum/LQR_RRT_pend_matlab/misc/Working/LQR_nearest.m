@@ -1,7 +1,7 @@
 function x_nearest_index = LQR_Nearest(V,x,n)
 
     [A,B] = linearize_pendulum_about(x);
-    [Q,R] = set_LQR_cost_function_parameters();
+    [Q,R] = get_LQR_cost_function_parameters();
     
     [K,S] = lqr(A,B,Q,R);
     

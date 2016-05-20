@@ -1,12 +1,22 @@
-function [t,y] = LQR_steer(x_nearest,x_rand)
+function [t,y,path_cost] = LQR_steer(x_nearest,x_rand)
     time_step = 0.001;
-    time_span = [0:time_step:0.1];
+    time_span = [0:time_step:100*time_step];
 
     x_nearest_offsetted = x_nearest - x_rand;
     
-    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
+    % linearize non-linear pendulum about x_rand
+    [A,B] = linearize_pendulum_about(x_rand);
+    [Q,R] = get_LQR_cost_function_parameters();
+    
+    % apply LQR control
+    [K,S] = lqr(A,B,Q,R);
+    
+    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand,A,B,K), time_span, x_nearest_offsetted);
+%    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand,A,B,K), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
 
     y = y_offsetted + repmat(x_rand',length(y_offsetted),1);
+    
+    path_cost = [y(end,:)'- x_nearest]' * S * [y(end,:)'- x_nearest];
     
 %{
     % plot results for testing
@@ -31,9 +41,11 @@ function [t,y] = LQR_steer(x_nearest,x_rand)
 %}
 end
 
+%{
 function [value,isterminal,direction] = eventReachedThreshold(t,y)
     threshold = 0.01;
     value      = double((y(1)*y(1) + y(2)*y(2)) < (threshold*threshold));
     isterminal = 1;
     direction  = 0;
 end
+%}

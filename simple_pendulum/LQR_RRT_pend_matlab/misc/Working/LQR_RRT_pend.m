@@ -50,16 +50,15 @@ function control = LQR_RRT_pend
 		i = LQR_nearest(V,x_rand,n);
 		x_nearest = V(:,i);
 		
-		[t, delta] = LQR_steer(x_nearest, x_rand);
+%		[t, delta, new_cost] = LQR_steer(x_nearest, x_rand);
+		[t, delta, new_cost] = LQR_steer_connect(x_nearest, x_rand);
         x_new = delta(end-1,:)';
-        new_cost = t(end-1);
         
         X_near_indices = LQR_near(V,x_new,n);
         
         [x_min_index, delta_min] = choose_parent(V,X_near_indices,x_new,cost);
         x_new = delta(end-1,:)';
-        
-		
+        		
 		% if angular position is greater than pi rads, wrap around
 		temp = x_new(1);
 		if( (x_new(1) > pi) || (x_new(1) < -pi) )
