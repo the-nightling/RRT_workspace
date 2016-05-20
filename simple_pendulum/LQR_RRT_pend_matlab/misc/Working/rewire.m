@@ -1,4 +1,6 @@
 function P = rewire(V, P, X_near_indices, x_new, cost, n)
+% rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
+
     x_min_index = 1;
     delta_min = [];
     

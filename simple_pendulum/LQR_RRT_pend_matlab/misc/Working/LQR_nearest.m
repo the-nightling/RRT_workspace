@@ -1,4 +1,6 @@
 function x_nearest_index = LQR_Nearest(V,x,n)
+% return the index of the tree vertex that is closest to a particular point x,
+% using an LQR-based distance metric
 
     [A,B] = linearize_pendulum_about(x);
     [Q,R] = get_LQR_cost_function_parameters();

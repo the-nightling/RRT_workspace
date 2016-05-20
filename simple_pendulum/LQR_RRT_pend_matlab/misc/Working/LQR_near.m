@@ -1,4 +1,6 @@
 function X_near_indices = LQR_near(V, x, n)
+% return the a list of indices of tree vertices that are within a certain distance from particular point x,
+% using an LQR-based distance metric
 
     [A,B] = linearize_pendulum_about(x);
     [Q,R] = get_LQR_cost_function_parameters();

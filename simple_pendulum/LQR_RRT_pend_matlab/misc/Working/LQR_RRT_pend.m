@@ -10,8 +10,6 @@ function control = LQR_RRT_pend
 	xG = [pi/2; 0];		% goal state
 
 	xlimits = [-pi,pi; -10,10];	% state limits
-	
-	U = linspace(-5,5,20);		% range of control torques that can be used
 		
 	N = 1000;	% maximum number of iterations
 
@@ -21,24 +19,9 @@ function control = LQR_RRT_pend
 	Ui = ones(1,N);			% stores index of control actions in U
 	u_path = ones(1,1000);  % stores sequence of control actions (solution to problem)
 	xbi = 1;                % index used for traceback
-	x_rand_c = repmat([1;1],1,length(U));   % stores temporary achievable states from a particular vertex
+	cost = [0];             % stores cost each node from root of tree (cummulative LQR cost of path through tree)
 	
-	cost = [0];
-
-	% setup plot
-	figure(1);
-	hold off;
-	plot(x0(1),x0(2),'b.','MarkerSize',30);	% initial state in blue
-	hold on;
-	plot(xG(1),xG(2),'r.','MarkerSize',30);	% goal state in red
-	grid on;
-
-	axis([xlimits(1,:),xlimits(2,:)]);
-	xlabel('Angular position [rad]');
-	ylabel('Angular velocity [rad/s]');
-	
-	set(gca,'XTick',-pi:pi/4:pi,'XTickLabel',{'-pi','-3pi/4','-pi/2','-pi/4','0','pi/4','pi/2','3pi/4','pi'});
-	
+	setup_plot(x0,xG,xlimits);
 	
 	% keep growing RRT util goal found or run out of iterations
 	for n = 2:N
@@ -46,16 +29,19 @@ function control = LQR_RRT_pend
 		% get random state
     	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
 		
-		%% select RRT vertex closest to the state point, based on LQR distance metric
+		% select RRT vertex closest to the state point, based on LQR distance metric
 		i = LQR_nearest(V,x_rand,n);
 		x_nearest = V(:,i);
 		
+		% temporarily create branch from nearest tree vertex to the new random state
 %		[t, delta, new_cost] = LQR_steer(x_nearest, x_rand);
 		[t, delta, new_cost] = LQR_steer_connect(x_nearest, x_rand);
-        x_new = delta(end-1,:)';
+        x_new = delta(end-1,:)';        % instead of the random state, use end of path steered towards random state; i.e. use x_new
         
+        % get list of tree vertices near new state x_new
         X_near_indices = LQR_near(V,x_new,n);
         
+        % choose a parent for x_new such that adding x_new to the tree is most efficient in terms of cost
         [x_min_index, delta_min] = choose_parent(V,X_near_indices,x_new,cost);
         x_new = delta(end-1,:)';
         		
@@ -74,13 +60,14 @@ function control = LQR_RRT_pend
 		end
 
 		
-		% link reachable state point to the nearest vertex in the tree
+		% link new state to the nearest vertex in the tree
 		V(:,n) = x_new;
 		P(n) = x_min_index;
 		cost = [cost; cost(x_min_index)+new_cost];
 %		Ui(n) = ui;
         
-       P = rewire(V, P, X_near_indices, x_new, cost, n);
+        % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
+        P = rewire(V, P, X_near_indices, x_new, cost, n);
         
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
 		%{
@@ -137,5 +124,21 @@ function control = LQR_RRT_pend
 
 	end
 	
+end
+
+function [] = setup_plot(x0,xG,xlimits)
+    % setup plot
+	figure(1);
+	hold off;
+	plot(x0(1),x0(2),'b.','MarkerSize',30);	% initial state in blue
+	hold on;
+	plot(xG(1),xG(2),'r.','MarkerSize',30);	% goal state in red
+	grid on;
+
+	axis([xlimits(1,:),xlimits(2,:)]);
+	xlabel('Angular position [rad]');
+	ylabel('Angular velocity [rad/s]');
+	
+	set(gca,'XTick',-pi:pi/4:pi,'XTickLabel',{'-pi','-3pi/4','-pi/2','-pi/4','0','pi/4','pi/2','3pi/4','pi'});
 end
 

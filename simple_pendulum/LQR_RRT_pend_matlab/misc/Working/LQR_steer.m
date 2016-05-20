@@ -1,5 +1,9 @@
 function [t,y,path_cost] = LQR_steer(x_nearest,x_rand)
-    time_step = 0.001;
+% returns a path y that attempts to link x_nearest to x_rand
+% the path is truncated after a set number of time steps
+% also returns the cost-to-go of the path
+
+    time_step = get_time_step();
     time_span = [0:time_step:100*time_step];
 
     x_nearest_offsetted = x_nearest - x_rand;

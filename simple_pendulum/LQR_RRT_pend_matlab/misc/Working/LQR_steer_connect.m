@@ -1,4 +1,6 @@
 function [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand)
+% returns a path y that links x_nearest to x_rand
+% also returns the cost-to-go of the path
 
     time_step = get_time_step();
     time_span = [0:time_step:20];

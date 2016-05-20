@@ -1,4 +1,6 @@
 function [x_min_index, delta_min] = choose_parent(V, X_near_indices, x_new, cost)
+% choose a parent for x_new such that adding x_new to the tree is most efficient in terms of cost
+
     minCost = Inf;
     x_min_index = 1;
     delta_min = [];
