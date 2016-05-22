@@ -14,34 +14,20 @@ function [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand)
     % apply LQR control
     [K,S] = lqr(A,B,Q,R);
 
-    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand,A,B,K), time_span, x_nearest_offsetted);    
-%    [t,y_offsetted] = ode45(@(t,y) linearized_pendulum_sys(t,y,x_rand,A,B,K), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
+    [t,y_offsetted] = ode45(@(t,x) linearized_pendulum_sys(t,x,x_rand,A,B,K), time_span, x_nearest_offsetted);    
+%    [t,y_offsetted] = ode45(@(t,x) linearized_pendulum_sys(t,x,x_rand,A,B,K), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
 
     y = y_offsetted + repmat(x_rand',length(y_offsetted),1);
     
     path_cost = [y(end-1,:)'- x_nearest]' * S * [y(end-1,:)'- x_nearest];
-    
-%{
-    % plot results for testing
-    
-	x0 = x_nearest;	% initial state; angle position measured from x-axis
-	xG = x_rand;		% goal state
-	xlimits = [-pi,pi; -10,10];	% state limits
-	figure(1);
-	hold off;
-	plot(x0(1),x0(2),'b.','MarkerSize',30);	% initial state in blue
-	hold on;
-	plot(xG(1),xG(2),'r.','MarkerSize',30);	% goal state in red
-	grid on;
 
-	axis([xlimits(1,:),xlimits(2,:)]);
-	xlabel('Angular position [rad]');
-	ylabel('Angular velocity [rad/s]');
-	
-	set(gca,'XTick',-pi:pi/4:pi,'XTickLabel',{'-pi','-3pi/4','-pi/2','-pi/4','0','pi/4','pi/2','3pi/4','pi'});
-    plot(y(:,1),y(:,2));
-    hold on;
-%}
+    %{
+    % display control actions for path
+    for i = 1:length(y)
+        u = K * y(i,:)'
+    end        
+    %}
+    
 end
 
 %{
