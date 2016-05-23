@@ -20,6 +20,8 @@ function control = LQR_RRT_pend
 	u_path = ones(1,1000);  % stores sequence of control actions (solution to problem)
 	xbi = 1;                % index used for traceback
 	cost = [0];             % stores cost each node from root of tree (cummulative LQR cost of path through tree)
+	paths = {[0,0]};
+	path_handles = [0];
 	
 	setup_plot(x0,xG,xlimits);
 	
@@ -53,7 +55,7 @@ function control = LQR_RRT_pend
 		
 		% plot new RRT branch
 		if(abs(x_new(1)-temp) < pi)
-            plot(delta(1:end-1,1),delta(1:end-1,2));
+            new_path_handle = plot(delta(1:end-1,1),delta(1:end-1,2));
 		%{
 			line([V(1,i),x_new(1)],[V(2,i),x_new(2)],'Color','b');
 		%}
@@ -64,10 +66,12 @@ function control = LQR_RRT_pend
 		V(:,n) = x_new;
 		P(n) = x_min_index;
 		cost = [cost; cost(x_min_index)+new_cost];
+		paths = {paths,delta(1:end-1,:)};
+		path_handles = [path_handles; new_path_handle];
 %		Ui(n) = ui;
         
         % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
-        P = rewire(V, P, X_near_indices, x_new, cost, n);
+        P = rewire(V, P, X_near_indices, x_new, cost, n, path_handles);
         
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
 		%{
@@ -77,14 +81,16 @@ function control = LQR_RRT_pend
 		%}
 		
 		drawnow;
-%		pause;
+		pause;
 
 		% if the goal was reached, stop growing tree
+		%{
 		if((x_new(1) <= xG(1)+0.1) && (x_new(1) >= xG(1)-0.1))
 		    if((x_new(2) <= xG(2)+0.5) && (x_new(2) >= xG(2)-0.5))			
 			    break;
 			end
 		end
+		%}
 		
 	end
 	

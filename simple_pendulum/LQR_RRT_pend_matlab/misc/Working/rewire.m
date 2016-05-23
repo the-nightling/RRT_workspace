@@ -1,5 +1,5 @@
-function P = rewire(V, P, X_near_indices, x_new, cost, n)
-% rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
+function P = rewire(V, P, X_near_indices, x_new, cost, n, path_handles)
+% rewire tree such that vertices near x_new use x_new as parent if it is more cost-effective
 
     x_min_index = 1;
     delta_min = [];
@@ -14,7 +14,9 @@ function P = rewire(V, P, X_near_indices, x_new, cost, n)
         if(cost(n)+new_cost < cost(x_near_index))
             P(x_near_index) = n;
             delta_min = delta;
-            plot(delta_min(1:end-1,1),delta_min(1:end-1,2), 'Color', 'r');
+            temp_handle = path_handles(x_near_index);
+                        delete(temp_handle);
+            path_handles(x_near_index) = plot(delta_min(1:end-1,1),delta_min(1:end-1,2), 'Color', 'r');
         end
     end
      
