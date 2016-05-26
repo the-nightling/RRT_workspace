@@ -30,10 +30,14 @@ function control = LQR_RRT_pend
 	
 		% get random state
     	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
+    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
 		i = LQR_nearest(V,x_rand,n);
 		x_nearest = V(:,i);
+    	x_nearest_handle = text(x_nearest(1),x_nearest(2),'  x_{nearest}');
+		
+		pause;
 		
 		% temporarily create branch from nearest tree vertex to the new random state
 %		[t, delta, new_cost] = LQR_steer(x_nearest, x_rand);
@@ -45,8 +49,16 @@ function control = LQR_RRT_pend
         
         % choose a parent for x_new such that adding x_new to the tree is most efficient in terms of cost
         [x_min_index, delta_min] = choose_parent(V,X_near_indices,x_new,cost);
-        x_new = delta(end-1,:)';
-        		
+        if(length(delta_min) == 0)
+            delta_min = delta;
+            x_min_index = i;
+        end
+        x_new = delta_min(end-1,:)';
+        x_parent = V(:,x_min_index);
+    	x_parent_handle = text(x_parent(1),x_parent(2),'  x_{parent}');
+        
+		pause;
+        
 		% if angular position is greater than pi rads, wrap around
 		temp = x_new(1);
 		if( (x_new(1) > pi) || (x_new(1) < -pi) )
@@ -55,7 +67,7 @@ function control = LQR_RRT_pend
 		
 		% plot new RRT branch
 		if(abs(x_new(1)-temp) < pi)
-            new_path_handle = plot(delta(1:end-1,1),delta(1:end-1,2));
+            new_path_handle = plot(delta_min(1:end-1,1),delta_min(1:end-1,2));
 		%{
 			line([V(1,i),x_new(1)],[V(2,i),x_new(2)],'Color','b');
 		%}
@@ -63,15 +75,16 @@ function control = LQR_RRT_pend
 
 		
 		% link new state to the nearest vertex in the tree
+        text(x_new(1),x_new(2),['',num2str(n)]);
 		V(:,n) = x_new;
 		P(n) = x_min_index;
 		cost = [cost; cost(x_min_index)+new_cost];
-		paths = {paths,delta(1:end-1,:)};
+		paths = {paths,delta_min(1:end-1,:)};
 		path_handles = [path_handles; new_path_handle];
 %		Ui(n) = ui;
         
         % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
-        P = rewire(V, P, X_near_indices, x_new, cost, n, path_handles);
+        [P,path_handles] = rewire(V, P, X_near_indices, x_new, cost, n, path_handles);
         
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
 		%{
@@ -81,6 +94,12 @@ function control = LQR_RRT_pend
 		%}
 		
 		drawnow;
+		pause;
+		
+		delete(x_rand_handle);
+		delete(x_nearest_handle);
+		delete(x_parent_handle);
+		
 		pause;
 
 		% if the goal was reached, stop growing tree
