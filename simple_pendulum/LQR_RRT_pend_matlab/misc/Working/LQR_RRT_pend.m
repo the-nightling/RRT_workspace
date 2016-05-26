@@ -30,14 +30,14 @@ function control = LQR_RRT_pend
 	
 		% get random state
     	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
-    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
+%    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
 		i = LQR_nearest(V,x_rand,n);
 		x_nearest = V(:,i);
-    	x_nearest_handle = text(x_nearest(1),x_nearest(2),'  x_{nearest}');
+%    	x_nearest_handle = text(x_nearest(1),x_nearest(2),'  x_{nearest}');
 		
-		pause;
+%		pause;
 		
 		% temporarily create branch from nearest tree vertex to the new random state
 %		[t, delta, new_cost] = LQR_steer(x_nearest, x_rand);
@@ -54,10 +54,10 @@ function control = LQR_RRT_pend
             x_min_index = i;
         end
         x_new = delta_min(end-1,:)';
-        x_parent = V(:,x_min_index);
-    	x_parent_handle = text(x_parent(1),x_parent(2),'  x_{parent}');
+%        x_parent = V(:,x_min_index);
+%    	x_parent_handle = text(x_parent(1),x_parent(2),'  x_{parent}');
         
-		pause;
+%		pause;
         
 		% if angular position is greater than pi rads, wrap around
 		temp = x_new(1);
@@ -75,7 +75,7 @@ function control = LQR_RRT_pend
 
 		
 		% link new state to the nearest vertex in the tree
-        text(x_new(1),x_new(2),['',num2str(n)]);
+%        text(x_new(1),x_new(2),['',num2str(n)]);
 		V(:,n) = x_new;
 		P(n) = x_min_index;
 		cost = [cost; cost(x_min_index)+new_cost];
@@ -94,13 +94,14 @@ function control = LQR_RRT_pend
 		%}
 		
 		drawnow;
+%{
 		pause;
-		
 		delete(x_rand_handle);
 		delete(x_nearest_handle);
-		delete(x_parent_handle);
+		delete(x_parent_handle);    
+%}		
 		
-		pause;
+%		pause;
 
 		% if the goal was reached, stop growing tree
 		%{
