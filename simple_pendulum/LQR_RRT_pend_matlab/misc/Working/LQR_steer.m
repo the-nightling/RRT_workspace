@@ -22,10 +22,10 @@ function [t,y,path_cost] = LQR_steer(x_nearest,x_rand)
     
     path_cost = [y(end,:)'- x_nearest]' * S * [y(end,:)'- x_nearest];
     
-    %%{
+    %{
     % display control actions for path
     for i = 1:length(y)
-        u = K * y(i,:)'
+        u = -K * y(i,:)'
     end        
     %}
 

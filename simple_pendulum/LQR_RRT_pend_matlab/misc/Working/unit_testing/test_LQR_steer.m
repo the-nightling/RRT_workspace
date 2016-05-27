@@ -5,7 +5,7 @@ function [] = test_LQR_steer()
     % call function
     [t,y,path_cost] = LQR_steer(x_nearest,x_rand);
     
-    [t_past_limit,y_past_limit,path_cost_past_limit] = LQR_steer_connect(x_nearest,y(end,:)');
+    [t_past_limit,y_past_limit,path_cost_past_limit] = LQR_steer_connect(y(end,:)',x_rand);
     path_cost_past_limit
     
     % plot results for testing
