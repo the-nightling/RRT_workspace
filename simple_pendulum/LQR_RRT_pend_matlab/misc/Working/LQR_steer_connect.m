@@ -3,7 +3,7 @@ function [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand)
 % also returns the cost-to-go of the path
 
     time_step = get_time_step();
-    time_span = [0:time_step:10];
+    time_span = [0:time_step:20];
 
     x_nearest_offsetted = x_nearest - x_rand;
     
@@ -21,7 +21,7 @@ function [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand)
     
     path_cost = [y(end-1,:)'- x_nearest]' * S * [y(end-1,:)'- x_nearest];
 
-    %%{
+    %{
     % display control actions for path
     for i = 1:length(y)
         u = K * y_offsetted(i,:)'

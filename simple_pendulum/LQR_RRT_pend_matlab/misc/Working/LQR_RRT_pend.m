@@ -9,7 +9,7 @@ function control = LQR_RRT_pend
 	x0 = [-pi/2; 0];	% initial state; angle position measured from x-axis
 	xG = [pi/2; 0];		% goal state
 
-	xlimits = [-pi,pi; -10,10];	% state limits
+	xlimits = [-2*pi,pi; -10,10];	% state limits
 		
 	N = 1000;	% maximum number of iterations
 
@@ -40,7 +40,6 @@ function control = LQR_RRT_pend
 %		pause;
 		
 		% temporarily create branch from nearest tree vertex to the new random state
-%		[t, delta, new_cost] = LQR_steer(x_nearest, x_rand);
 		[t, delta, new_cost] = LQR_steer_connect(x_nearest, x_rand);
         x_new = delta(end-1,:)';        % instead of the random state, use end of path steered towards random state; i.e. use x_new
         
@@ -59,20 +58,8 @@ function control = LQR_RRT_pend
         
 %		pause;
         
-		% if angular position is greater than pi rads, wrap around
-		temp = x_new(1);
-		if( (x_new(1) > pi) || (x_new(1) < -pi) )
-        		x_new(1) = mod(x_new(1)+pi,2*pi)-pi;
-        end
-		
 		% plot new RRT branch
-		if(abs(x_new(1)-temp) < pi)
-            new_path_handle = plot(delta_min(1:end-1,1),delta_min(1:end-1,2));
-		%{
-			line([V(1,i),x_new(1)],[V(2,i),x_new(2)],'Color','b');
-		%}
-		end
-
+        new_path_handle = plot(delta_min(1:end-1,1),delta_min(1:end-1,2));
 		
 		% link new state to the nearest vertex in the tree
 %        text(x_new(1),x_new(2),['',num2str(n)]);
@@ -80,7 +67,7 @@ function control = LQR_RRT_pend
 		P(n) = x_min_index;
 		cost = [cost; cost(x_min_index)+new_cost];
 		paths = {paths,delta_min(1:end-1,:)};
-		path_handles = [path_handles; new_path_handle];
+    	path_handles = [path_handles; new_path_handle];
 %		Ui(n) = ui;
         
         % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
@@ -165,6 +152,6 @@ function [] = setup_plot(x0,xG,xlimits)
 	xlabel('Angular position [rad]');
 	ylabel('Angular velocity [rad/s]');
 	
-	set(gca,'XTick',-pi:pi/4:pi,'XTickLabel',{'-pi','-3pi/4','-pi/2','-pi/4','0','pi/4','pi/2','3pi/4','pi'});
+	set(gca,'XTick',-2*pi:pi/4:pi,'XTickLabel',{'-2pi','-7pi/4','-3pi/2','-5pi/4','-pi','-3pi/4','-pi/2','-pi/4','0','pi/4','pi/2','3pi/4','pi'});
 end
 

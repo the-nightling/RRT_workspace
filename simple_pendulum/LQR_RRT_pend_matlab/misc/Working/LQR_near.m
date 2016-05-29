@@ -8,7 +8,7 @@ function X_near_indices = LQR_near(V, x, n)
     [K,S] = lqr(A,B,Q,R);
     
     X_near_indices = [];
-    constant_gamma = 5;
+    constant_gamma = 100;
     threshold = constant_gamma * sqrt(log(n)/n);
     
     for i = 1:n-1
