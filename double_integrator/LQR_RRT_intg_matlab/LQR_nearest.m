@@ -2,7 +2,7 @@ function x_nearest_index = LQR_Nearest(V,x,n)
 % return the index of the tree vertex that is closest to a particular point x,
 % using an LQR-based distance metric
 
-    [A,B] = linearize_pendulum_about(x);
+    [A,B] = get_A_B_for_sys();
     [Q,R] = get_LQR_cost_function_parameters();
     
     [K,S] = lqr(A,B,Q,R);

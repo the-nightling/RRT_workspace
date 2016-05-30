@@ -7,15 +7,13 @@ function [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand)
 
     x_nearest_offsetted = x_nearest - x_rand;
     
-    % linearize non-linear pendulum about x_rand
     [A,B] = get_A_B_for_sys();
     [Q,R] = get_LQR_cost_function_parameters();
     
     % apply LQR control
     [K,S] = lqr(A,B,Q,R);
 
-%    [t,y_offsetted] = ode45(@(t,x) linearized_pendulum_sys(t,x,x_rand,A,B,K), time_span, x_nearest_offsetted);    
-    [t,y_offsetted] = ode45(@(t,x) linearized_pendulum_sys(t,x,x_rand,A,B,K), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
+    [t,y_offsetted] = ode45(@(t,x) double_intg_sys(t,x,A,B,K), time_span, x_nearest_offsetted, odeset('Events',@eventReachedThreshold));
 
     y = y_offsetted + repmat(x_rand',length(y_offsetted),1);
     
@@ -25,7 +23,7 @@ function [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand)
     % display control actions for path
     for i = 1:length(y)
         u = K * y_offsetted(i,:)'
-    end        
+    end
     %}
     
 end

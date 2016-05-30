@@ -6,10 +6,10 @@ function control = LQR_RRT_pend
 % If the goal state was located, a red line traces back the sequence of states used
 % to reach the goal state.
 	
-	x0 = [-pi/2; 0];	% initial state; angle position measured from x-axis
-	xG = [pi/2; 0];		% goal state
+	x0 = [0; 0; 0; 0];	% initial state; angle position measured from x-axis
+	xG = [8; 0; 0; 0];		% goal state
 
-	xlimits = [-2*pi,pi; -10,10];	% state limits
+	xlimits = [-2,8; -8,8];	% state limits
 		
 	N = 1000;	% maximum number of iterations
 
@@ -29,7 +29,12 @@ function control = LQR_RRT_pend
 	for n = 2:N
 	
 		% get random state
-    	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
+		x_rand = [0;0;0;0];
+		x_rand(1) = rand(1,1)*10 - 2;
+		x_rand(2) = rand(1,1)*20 - 10;
+		x_rand(3) = rand(1,1)*16 - 8;
+		x_rand(4) = rand(1,1)*20 - 10;
+
 %    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
@@ -143,15 +148,15 @@ function [] = setup_plot(x0,xG,xlimits)
     % setup plot
 	figure(1);
 	hold off;
-	plot(x0(1),x0(2),'b.','MarkerSize',30);	% initial state in blue
+	plot(x0(1),x0(3),'b.','MarkerSize',30);	% initial state in blue
 	hold on;
-	plot(xG(1),xG(2),'r.','MarkerSize',30);	% goal state in red
+	plot(xG(1),xG(3),'r.','MarkerSize',30);	% goal state in red
 	grid on;
 
 	axis([xlimits(1,:),xlimits(2,:)]);
-	xlabel('Angular position [rad]');
-	ylabel('Angular velocity [rad/s]');
+	xlabel('x');
+	ylabel('y');
 	
-	set(gca,'XTick',-2*pi:pi/4:pi,'XTickLabel',{'-2pi','-7pi/4','-3pi/2','-5pi/4','-pi','-3pi/4','-pi/2','-pi/4','0','pi/4','pi/2','3pi/4','pi'});
+	set(gca,'XTick',-2:1:8);
 end
 
