@@ -35,7 +35,11 @@ function control = LQR_RRT_pend
 		x_rand(2) = rand(1,1)*20 - 10;
 		x_rand(3) = rand(1,1)*16 - 8;
 		x_rand(4) = rand(1,1)*20 - 10;
-
+        
+        %if(check_collision([x_rand]))
+        %    continue;
+        %end
+        
 %    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
@@ -81,11 +85,11 @@ function control = LQR_RRT_pend
             
             % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
             [P,path_handles] = rewire(V, P, X_near_indices, x_new, cost, iteration, path_handles);
-            iteration = iteration + 1;
+            iteration = iteration + 1
             
             drawnow;
 		
-		    pause;
+%		    pause;
             
         end
 		
@@ -152,12 +156,12 @@ function [] = setup_plot(x0,xG,xlimits)
 	line([1,3],[-2,-2],'Color','k');
 	line([1,1],[-2,8],'Color','k');
 	line([3,3],[-2,8],'Color','k');
-	line([1,8],[3,8],'Color','k');
+	line([1,3],[8,8],'Color','k');
 	
-	line([-8,-8],[5,7],'Color','k');
-	line([-8,2],[5,5],'Color','k');
-	line([-8,2],[7,7],'Color','k');
-	line([2,2],[5,7],'Color','k');
+	line([5,7],[-8,-8],'Color','k');
+	line([5,5],[-8,2],'Color','k');
+	line([7,7],[-8,2],'Color','k');
+	line([5,7],[2,2],'Color','k');
 
 
 	axis([xlimits(1,:),xlimits(2,:)]);
