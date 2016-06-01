@@ -13,12 +13,14 @@ function [P,path_handles] = rewire(V, P, X_near_indices, x_new, cost, n, path_ha
             [t,delta,new_cost] = LQR_steer_connect(x_new,x_near);
 
             if(cost(n)+new_cost < cost(x_near_index))
-                P(x_near_index) = n;
-                delta_min = delta;
-                temp_handle = path_handles(x_near_index);
-                delete(temp_handle);
-                path_handles(x_near_index) = plot(delta_min(1:end-1,1),delta_min(1:end-1,2), 'Color', 'r');
-
+                isColliding = check_collision(delta);
+                if(~isColliding)
+                    P(x_near_index) = n;
+                    delta_min = delta;
+                    temp_handle = path_handles(x_near_index);
+                    delete(temp_handle);
+                    path_handles(x_near_index) = plot(delta_min(1:end-1,1),delta_min(1:end-1,3), 'Color', 'r');
+                end
             end
         end
     end

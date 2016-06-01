@@ -8,7 +8,7 @@ function x_nearest_index = LQR_Nearest(V,x,n)
     [K,S] = lqr(A,B,Q,R);
     
     x_nearest_index = 1;
-    min_cost_to_go = 999;
+    min_cost_to_go = inf;
     
     for i = 1:n-1
         new_cost_to_go = [V(:,i)-x]' * S * [V(:,i)-x];

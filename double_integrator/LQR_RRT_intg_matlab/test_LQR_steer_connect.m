@@ -1,6 +1,6 @@
 function [] = test_LQR_steer_connect()
-    x_nearest = [0;0;0;0];
-    x_rand = [-1;0;-2;0];
+    x_nearest = [0;0;2;0];
+    x_rand = [-1;1;-2;1];
     
     % call function
     [t,y,path_cost] = LQR_steer_connect(x_nearest,x_rand);

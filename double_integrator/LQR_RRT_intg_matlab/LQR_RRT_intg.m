@@ -24,6 +24,7 @@ function control = LQR_RRT_pend
 	path_handles = [0];
 	
 	setup_plot(x0,xG,xlimits);
+	iteration = 2;
 	
 	% keep growing RRT util goal found or run out of iterations
 	for n = 2:N
@@ -38,7 +39,7 @@ function control = LQR_RRT_pend
 %    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
-		i = LQR_nearest(V,x_rand,n);
+		i = LQR_nearest(V,x_rand,iteration);
 		x_nearest = V(:,i);
 %    	x_nearest_handle = text(x_nearest(1),x_nearest(2),'  x_{nearest}');
 		
@@ -49,7 +50,7 @@ function control = LQR_RRT_pend
         x_new = delta(end-1,:)';        % instead of the random state, use end of path steered towards random state; i.e. use x_new
         
         % get list of tree vertices near new state x_new
-        X_near_indices = LQR_near(V,x_new,n);
+        X_near_indices = LQR_near(V,x_new,iteration);
         
         % choose a parent for x_new such that adding x_new to the tree is most efficient in terms of cost
         [x_min_index, delta_min] = choose_parent(V,X_near_indices,x_new,cost);
@@ -62,38 +63,33 @@ function control = LQR_RRT_pend
 %    	x_parent_handle = text(x_parent(1),x_parent(2),'  x_{parent}');
         
 %		pause;
-        
-		% plot new RRT branch
-        new_path_handle = plot(delta_min(1:end-1,1),delta_min(1:end-1,2));
+        isColliding = check_collision(delta_min);
+
+        if(~isColliding)
+            
+		    % plot new RRT branch
+            new_path_handle = plot(delta_min(1:end-1,1),delta_min(1:end-1,3));
 		
-		% link new state to the nearest vertex in the tree
-%        text(x_new(1),x_new(2),['',num2str(n)]);
-		V(:,n) = x_new;
-		P(n) = x_min_index;
-		cost = [cost; cost(x_min_index)+new_cost];
-		paths = {paths,delta_min(1:end-1,:)};
-    	path_handles = [path_handles; new_path_handle];
-%		Ui(n) = ui;
-        
-        % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
-        [P,path_handles] = rewire(V, P, X_near_indices, x_new, cost, n, path_handles);
-        
-		% for higher values of n, only update plot every 100 iteration (speeds up animation)
-		%{
-		if(mod(n,1)==1)
-			drawnow;
-		end
-		%}
+		    % link new state to the nearest vertex in the tree
+    %        text(x_new(1),x_new(2),['',num2str(n)]);
+		    V(:,iteration) = x_new;
+		    P(iteration) = x_min_index;
+		    cost = [cost; cost(x_min_index)+new_cost];
+		    paths = {paths,delta_min(1:end-1,:)};
+        	path_handles = [path_handles; new_path_handle];
+    %		Ui(n) = ui;
+            
+            % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
+            [P,path_handles] = rewire(V, P, X_near_indices, x_new, cost, iteration, path_handles);
+            iteration = iteration + 1;
+            
+            drawnow;
 		
-		drawnow;
-%{
-		pause;
-		delete(x_rand_handle);
-		delete(x_nearest_handle);
-		delete(x_parent_handle);    
-%}		
+		    pause;
+            
+        end
 		
-%		pause;
+
 
 		% if the goal was reached, stop growing tree
 		%{
@@ -106,7 +102,7 @@ function control = LQR_RRT_pend
 		
 	end
 	
-	if(n == N)
+	if(iteration == N)
 		title('Simulation complete (goal not found; ran out of iterations)');
 	else		% retrace steps from goal state to initial state
 	    title('Simulation complete (goal found)');
@@ -152,6 +148,17 @@ function [] = setup_plot(x0,xG,xlimits)
 	hold on;
 	plot(xG(1),xG(3),'r.','MarkerSize',30);	% goal state in red
 	grid on;
+	
+	line([1,3],[-2,-2],'Color','k');
+	line([1,1],[-2,8],'Color','k');
+	line([3,3],[-2,8],'Color','k');
+	line([1,8],[3,8],'Color','k');
+	
+	line([-8,-8],[5,7],'Color','k');
+	line([-8,2],[5,5],'Color','k');
+	line([-8,2],[7,7],'Color','k');
+	line([2,2],[5,7],'Color','k');
+
 
 	axis([xlimits(1,:),xlimits(2,:)]);
 	xlabel('x');
