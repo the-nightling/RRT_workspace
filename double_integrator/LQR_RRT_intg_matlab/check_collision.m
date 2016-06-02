@@ -1,12 +1,13 @@
 function isColliding = check_collision(path)
+
     isColliding = 0;
-    for i=1:length(path)
-        if((path(i,1) < -2))
+    for i=1:size(path,1)
+        if((path(i,1) < -4))
             isColliding = 1;
             return;
         end
         
-        if((path(i,1) > 8))
+        if((path(i,1) > 10))
             isColliding = 1;
             return;
         end
@@ -16,7 +17,7 @@ function isColliding = check_collision(path)
             return;
         end
         
-        if((path(i,3) > 8))
+        if((path(i,3) > 10))
             isColliding = 1;
             return;
         end

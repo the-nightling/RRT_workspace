@@ -9,9 +9,11 @@ function control = LQR_RRT_pend
 	x0 = [0; 0; 0; 0];	% initial state; angle position measured from x-axis
 	xG = [8; 0; 0; 0];		% goal state
 
-	xlimits = [-2,8; -8,8];	% state limits
+	xlimits = [-4,12; -8,10];	% state limits
 		
-	N = 1000;	% maximum number of iterations
+	N = 5000;	% maximum number of iterations
+	
+	goal_bias = 0.40;   % choose the goal state instead of a random state 10% of the time
 
 	% pre-allocating memory
 	V = repmat(x0,1,N);		% stores a graph of states in RRT
@@ -29,18 +31,24 @@ function control = LQR_RRT_pend
 	% keep growing RRT util goal found or run out of iterations
 	for n = 2:N
 	
-		% get random state
-		x_rand = [0;0;0;0];
-		x_rand(1) = rand(1,1)*10 - 2;
-		x_rand(2) = rand(1,1)*20 - 10;
-		x_rand(3) = rand(1,1)*16 - 8;
-		x_rand(4) = rand(1,1)*20 - 10;
-        
-        %if(check_collision([x_rand]))
-        %    continue;
-        %end
-        
-%    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
+	    use_goal = rand < goal_bias;
+	    if(use_goal)
+	        x_rand = xG;
+	    else
+            % get random state
+            x_rand = [0;0;0;0];
+            x_rand(1) = rand(1,1)*12 - 2;
+            x_rand(2) = rand(1,1)*20 - 10;
+            x_rand(3) = rand(1,1)*16 - 8;
+            x_rand(4) = rand(1,1)*20 - 10;
+            
+            if(check_collision([x_rand']))
+                continue;
+            end
+
+            %    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
+	    end
+		
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
 		i = LQR_nearest(V,x_rand,iteration);
@@ -168,6 +176,5 @@ function [] = setup_plot(x0,xG,xlimits)
 	xlabel('x');
 	ylabel('y');
 	
-	set(gca,'XTick',-2:1:8);
 end
 
