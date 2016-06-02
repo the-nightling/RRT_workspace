@@ -13,6 +13,8 @@ function control = LQR_RRT_pend
 		
 	N = 1000;	% maximum number of iterations
 
+	goal_bias = 0.10;   % choose the goal state instead of a random state 10% of the time
+
 	% pre-allocating memory
 	V = repmat(x0,1,N);		% stores a graph of states in RRT
 	P = ones(1,N);			% stores index of parent states
@@ -27,10 +29,14 @@ function control = LQR_RRT_pend
 	
 	% keep growing RRT util goal found or run out of iterations
 	for n = 2:N
-	
-		% get random state
-    	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
-%    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
+	    use_goal = rand < goal_bias;
+	    if(use_goal)
+	        x_rand = xG;
+	    else
+            % get random state
+        	x_rand = rand(2,1).*(xlimits(:,2)-xlimits(:,1)) + xlimits(:,1);
+    %    	x_rand_handle = text(x_rand(1),x_rand(2),'  x_{rand}');
+        end
 		
 		% select RRT vertex closest to the state point, based on LQR distance metric
 		i = LQR_nearest(V,x_rand,n);
@@ -146,6 +152,7 @@ function [] = setup_plot(x0,xG,xlimits)
 	plot(x0(1),x0(2),'b.','MarkerSize',30);	% initial state in blue
 	hold on;
 	plot(xG(1),xG(2),'r.','MarkerSize',30);	% goal state in red
+	plot(xG(1)-2*pi,xG(2),'r.','MarkerSize',30);	% goal state in red
 	grid on;
 
 	axis([xlimits(1,:),xlimits(2,:)]);
