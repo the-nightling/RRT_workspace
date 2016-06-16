@@ -26,6 +26,8 @@ function control = LQR_RRT_pend
 	
 	setup_plot(x0,xG,xlimits);
 	
+	[t,delta_max,max_cost] = LQR_steer_connect(x0,xG);
+	
 	% keep growing RRT until goal found or run out of iterations
 	for n = 2:N
 	    use_goal = rand < goal_bias;
@@ -65,6 +67,10 @@ function control = LQR_RRT_pend
 
         % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
         V = rewire(V, X_near_indices, x_new, numnodes(V));
+        
+        if(mod(n,10)==1)
+            V = prune_tree(V,max_cost);
+        end
         
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
 		%{

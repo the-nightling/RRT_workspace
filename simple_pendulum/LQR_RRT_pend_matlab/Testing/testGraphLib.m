@@ -30,6 +30,18 @@ x0 = [7.7; 0.1];
 new_vertex = table(x0(1),x0(2),'VariableNames',{'Position' 'Velocity'});
 V = addnode(V, new_vertex);
 
+x0 = [7.7; 0.1];
+new_vertex = table(x0(1),x0(2),'VariableNames',{'Position' 'Velocity'});
+V = addnode(V, new_vertex);
+
+x0 = [7.7; 0.1];
+new_vertex = table(x0(1),x0(2),'VariableNames',{'Position' 'Velocity'});
+V = addnode(V, new_vertex);
+
+x0 = [7.7; 0.1];
+new_vertex = table(x0(1),x0(2),'VariableNames',{'Position' 'Velocity'});
+V = addnode(V, new_vertex);
+
 
 
 V = addedge(V,1,2);
@@ -38,6 +50,9 @@ V = addedge(V,1,4);
 V = addedge(V,2,5);
 V = addedge(V,2,6);
 V = addedge(V,3,7);
+V = addedge(V,6,8);
+V = addedge(V,6,9);
+V = addedge(V,6,10);
 
 plot(V);
 
