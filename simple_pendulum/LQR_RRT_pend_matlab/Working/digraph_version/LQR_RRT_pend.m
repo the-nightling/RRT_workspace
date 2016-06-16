@@ -7,7 +7,7 @@ function control = LQR_RRT_pend
 % to reach the goal state.
 	
 	x0 = [-pi/2; 0];	% initial state; angle position measured from x-axis
-	xG = [pi/2; 0];		% goal state
+	xG = [pi/2-2*pi; 0];		% goal state
 
 	xlimits = [-2*pi,pi; -10,10];	% state limits
 		
