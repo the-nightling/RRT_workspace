@@ -67,11 +67,12 @@ function control = LQR_RRT_pend
 
         % rewire tree such that vertices near x_new use x_new as parent is it is more cost-effective
         V = rewire(V, X_near_indices, x_new, numnodes(V));
-        
-        if(mod(n,10)==1)
+ 
+%{        
+        if(mod(n,20)==1)
             V = prune_tree(V,max_cost);
         end
-        
+%}        
 		% for higher values of n, only update plot every 100 iteration (speeds up animation)
 		%{
 		if(mod(n,1)==1)

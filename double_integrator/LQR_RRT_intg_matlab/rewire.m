@@ -16,6 +16,7 @@ function [P,path_handles] = rewire(V, P, X_near_indices, x_new, cost, n, path_ha
                 isColliding = check_collision(delta);
                 if(~isColliding)
                     P(x_near_index) = n;
+                    cost(x_near_index) = cost(n)+new_cost;
                     delta_min = delta;
                     temp_handle = path_handles(x_near_index);
                     delete(temp_handle);

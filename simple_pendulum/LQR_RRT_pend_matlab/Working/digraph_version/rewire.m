@@ -15,6 +15,7 @@ function V = rewire(V, X_near_indices, x_new, n)
             if(V.Nodes.Cost(n)+new_cost < V.Nodes.Cost(x_near_index))
                 V = rmedge(V, predecessors(V,x_near_index), x_near_index);
                 V = addedge(V, n, x_near_index);
+                V.Nodes.Cost(x_near_index) = V.Nodes.Cost(n)+new_cost;
 
                 delta_min = delta;
                 temp_handle = V.Nodes.Path_Handle(x_near_index);
